@@ -6,6 +6,7 @@
   height: 100vh;
   background-color: #f0f2f5;
 }
+
 .login-form {
   padding: 40px;
   background-color: white;
@@ -16,4 +17,42 @@
   gap: 20px;
   width: 350px;
 }
-/* ... (and the rest of the CSS from the previous message) ... */
+
+.login-form h2 {
+  margin-top: 0;
+  text-align: center;
+  color: #1c1e21;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-group label {
+  font-weight: bold;
+  color: #606770;
+}
+
+.form-group input {
+  padding: 12px;
+  border: 1px solid #dddfe2;
+  border-radius: 6px;
+  font-size: 16px;
+}
+
+.login-form button {
+  padding: 12px;
+  border: none;
+  border-radius: 6px;
+  background-color: #1877f2;
+  color: white;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.login-form button:hover {
+  background-color: #166fe5;
+}
