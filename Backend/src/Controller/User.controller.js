@@ -153,7 +153,6 @@ const LogInUser = async (req, res) => {
 };
 
 const LogoutUser = async (req, res) => {
-
   if (!req.user) {
     throw new ApiError(401, "Unauthorized access");
   }
@@ -228,6 +227,7 @@ const getCurrentUser = async (req, res) => {
         avatar: true,
         civicScore: true,
         rank: true,
+        badges : true,
         address: true,
         role: true,
         createdAt: true,
@@ -362,6 +362,44 @@ const updateUserAvatar = async (req, res) => {
   }
 };
 
+const updateAllUserRanks = async (req, res) => {
+  try {
+    // Fetch all users, sorted by civicScore in descending order.
+    const users = await prisma.user.findMany({
+      orderBy: {
+        civicScore: "desc",
+      },
+      select: {
+        id: true,
+        civicScore: true,
+        name: true,
+        avatar: true,
+        badges: true,
+      },
+    });
+
+    // Loop through the sorted users and update their rank.
+    // Prisma's `updateMany` cannot be used here because the new rank depends on the index.
+    const updatePromises = users.map(async (user, index) => {
+      const newRank = index + 1;
+      return prisma.user.update({
+        where: { id: user.id },
+        data: { rank: newRank },
+      });
+    });
+
+    await Promise.all(updatePromises);
+
+    return res.status(200).json({
+      message: "User ranks updated successfully.",
+      updatedCount: users.length,
+      user: users,
+    });
+  } catch (error) {
+    throw new ApiError(500, error.message || "Failed to update user ranks.");
+  }
+};
+
 export {
   RegisterUser,
   LogInUser,
@@ -370,19 +408,19 @@ export {
   getCurrentUser,
   updateAccountDetails,
   updateUserAvatar,
+  updateAllUserRanks,
 };
-
 
 // const geocodingService = async (address) => {
 //     // This is a placeholder for your geocoding API call.
 //     // Replace with your actual geocoding service logic (e.g., Google Maps, Mapbox, etc.)
 //     const GEOCODING_API_KEY = process.env.GEOCODING_API_KEY;
 //     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${GEOCODING_API_KEY}`;
-    
+
 //     try {
 //         const response = await axios.get(url);
 //         const data = response.data;
-        
+
 //         if (data.status === "OK" && data.results.length > 0) {
 //             const result = data.results[0];
 //             return {
