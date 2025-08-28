@@ -6,47 +6,118 @@ import {
 } from "../Utility/cloudinary.js";
 import { prisma } from "../DB/DataBase.js";
 
-const CreateTask = async (req, res) => {
-  const { title, description, latitude, longitude } = req.body;
-  const imageUrlLocalPath = req.file?.path;
-
-  if (!req.user) {
-    throw new ApiError(401, "Unauthorized access");
-  }
-
-  if (!title || !description || !latitude || !longitude) {
-    throw new ApiError(
-      400,
-      "Title, description, latitude, and longitude are required"
-    );
-  }
-
+const getAndAssignBadges = async (userId, civicScore) => {
   try {
-    const imageUrl = imageUrlLocalPath
-      ? await uploadOnCloudinary(imageUrlLocalPath)
-      : null;
-    if (imageUrlLocalPath && !imageUrl) {
-      throw new ApiError(500, "Failed to upload image to cloudinary");
+    let badgeToAssign = null;
+    let pointsRequired = 0;
+
+    // Determine which badge to assign based on civicScore
+    if (civicScore >= 750) {
+      badgeToAssign = "Civic Champion";
+      pointsRequired = 750;
+    } else if (civicScore >= 500) {
+      badgeToAssign = "Community Leader";
+      pointsRequired = 500;
+    } else if (civicScore >= 250) {
+      badgeToAssign = "Active Citizen";
+      pointsRequired = 250;
+    } else {
+      // No badge to assign if score is below 250
+      return;
     }
 
-    const task = await prisma.task.create({
-      data: {
-        title,
-        description,
-        latitude: parseFloat(latitude),
-        longitude: parseFloat(longitude),
-        imageUrl: imageUrl?.url,
-        creatorId: req.user.id,
+    const badge = await prisma.badge.findFirst({
+      where: { name: badgeToAssign },
+    });
+
+    if (!badge) {
+      badge = await prisma.badge.create({
+        data: {
+          name: badgeToAssign,
+        },
+      });
+    }
+
+
+    const userHasBadge = await prisma.user.findFirst({
+      where: {
+        id: userId,
+        badges: {
+          some: {
+            id: badge.id,
+          },
+        },
       },
     });
 
-    return res
-      .status(201)
-      .json(new ApiResponse(201, task, "Task created successfully"));
+    if (!userHasBadge) {
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          badges: {
+            connect: { id: badge.id },
+          },
+        },
+      });
+      console.log(`User ${userId} was assigned the ${badgeToAssign} badge.`);
+    }
   } catch (error) {
-    throw new ApiError(500, error.message || "Failed to create task");
+    console.error("Error assigning badge:", error);
   }
 };
+
+const CreateTask = async (req, res) => {
+    const { title, description, latitude, longitude } = req.body;
+    const imageUrlLocalPath = req.file?.path;
+
+    if (!req.user) {
+        throw new ApiError(401, "Unauthorized access");
+    }
+
+    if (!title || !description || !latitude || !longitude) {
+        throw new ApiError(400, "Title, description, latitude, and longitude are required");
+    }
+
+    try {
+        const imageUrl = imageUrlLocalPath
+            ? await uploadOnCloudinary(imageUrlLocalPath)
+            : null;
+        if (imageUrlLocalPath && !imageUrl) {
+            throw new ApiError(500, "Failed to upload image to cloudinary");
+        }
+
+        // 1. Create the new task
+        const task = await prisma.task.create({
+            data: {
+                title,
+                description,
+                latitude: parseFloat(latitude),
+                longitude: parseFloat(longitude),
+                imageUrl: imageUrl?.url,
+                creatorId: req.user.id,
+            },
+        });
+
+        // 2. Award 10 points to the user
+        const updatedUser = await prisma.user.update({
+            where: { id: req.user.id },
+            data: {
+                civicScore: {
+                    increment: 10,
+                },
+            },
+        });
+
+        // 3. Check and assign badges based on the new score
+        await getAndAssignBadges(req.user.id, updatedUser.civicScore);
+
+        return res
+            .status(201)
+            .json(new ApiResponse(201, task, "Task created and 10 points awarded successfully"));
+    } catch (error) {
+        throw new ApiError(500, error.message || "Failed to create task");
+    }
+  }
 
 const GetAllTasks = async (req, res) => {
   const { status, limit = 10, page = 1 } = req.query;
@@ -315,6 +386,44 @@ const AddComment = async (req, res) => {
   }
 };
 
+
+
+const updateCivicScore = async (req, res) => {
+  const userId = req.user.id;
+  const { pointsToAdd } = req.body;
+
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new ApiError(404, "User not found.");
+    }
+
+    const newCivicScore = user.civicScore + pointsToAdd;
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: {
+        civicScore: newCivicScore,
+      },
+    });
+
+    // Call the badge assignment function after the score is updated
+    await getAndAssignBadges(userId, newCivicScore);
+
+    return res
+      .status(200)
+      .json(
+        new ApiResponse(200, updatedUser, "Civic score updated successfully.")
+      );
+  } catch (error) {
+    throw new ApiError(500, error.message || "Failed to update civic score.");
+  }
+};
+
 export {
   CreateTask,
   GetAllTasks,
@@ -323,4 +432,5 @@ export {
   AddComment,
   processTaskVotes,
   VoteonTask,
+  updateCivicScore
 };
