@@ -13,6 +13,7 @@ datasource db {
 
 enum UserRole {
   USER
+  ADMIN
 }
 
 enum TaskStatus {
@@ -98,6 +99,7 @@ model Reward {
   description String?
   pointsReq   Int
   claims      RewardClaim[]
+  imageUrl    String
 }
 
 model RewardClaim {
