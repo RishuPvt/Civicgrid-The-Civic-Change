@@ -5,7 +5,10 @@ interface User {
   name: string;
   email: string;
   role: 'USER' | 'ADMIN';
-  avatar: string; // 1. Add the avatar property
+  avatar: string;
+  address: string;
+  latitude?: number;  // 1. Add optional latitude
+  longitude?: number; // 2. Add optional longitude
 }
 
 interface AuthContextType {
@@ -21,13 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
   const login = (userData: { name: string; email: string; role?: 'USER' | 'ADMIN' }) => {
-    // 2. When a user logs in, give them a default avatar
-    const userWithRoleAndAvatar: User = { 
+    const userWithAllData: User = { 
       ...userData, 
       role: userData.role || 'USER',
-      avatar: `https://i.pravatar.cc/150?u=${userData.email}` // Default avatar
+      avatar: `https://i.pravatar.cc/150?u=${userData.email}`,
+      address: 'Not Set', // Default address is now "Not Set"
     };
-    setUser(userWithRoleAndAvatar);
+    setUser(userWithAllData);
   };
 
   const logout = () => {
