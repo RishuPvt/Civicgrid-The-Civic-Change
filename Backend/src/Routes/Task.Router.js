@@ -6,10 +6,9 @@ import { upload } from "../Middleware/Multer.js";
 import {
   CreateTask,
   GetAllTasks,
-  processVoteForStatusUpdate,
+ updateCivicScore,
   GetTasksbyUser,
   AddComment,
-  processTaskVotes,
   VoteonTask,
 } from "../Controller/Task.controller.js";
 
@@ -21,13 +20,11 @@ router
 
 router.route("/GetAllTasks").get(verifyJWT, GetAllTasks);
 
-router
-  .route("/processVoteForStatusUpdate/:taskId")
-  .put(verifyJWT, processVoteForStatusUpdate);
+router.route("/Badge/updateCivicScore").patch(verifyJWT, updateCivicScore);
+
 
 router.route("/GetTasksbyUser").get(verifyJWT, GetTasksbyUser);
 
-router.route("/processTaskVotes").delete(verifyJWT, processTaskVotes);
 
 router.route("/AddComment/:taskId").patch(verifyJWT, AddComment);
 

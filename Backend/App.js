@@ -27,5 +27,9 @@ import TaskRouter from "./src/Routes/Task.Router.js";
 
 app.use("/api/v1/users/task", TaskRouter);
 
+import RewardRouter from "./src/Routes/Reward.Router.js";
+
+app.use("/api/v1", RewardRouter);
+
 
 export { app };

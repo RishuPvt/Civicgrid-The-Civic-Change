@@ -5,7 +5,7 @@ import {   RegisterUser,
   changeCurrentPassword,
   getCurrentUser,
   updateAccountDetails,
-  updateUserAvatar, } from "../Controller/User.controller.js";
+  updateUserAvatar,updateAllUserRanks } from "../Controller/User.controller.js";
 
   import {verifyJWT} from "../Middleware/Auth.middleware.js"
   import {upload} from "../Middleware/Multer.js"
@@ -21,6 +21,9 @@ import {   RegisterUser,
    router.route("/getCurrentUser").get(verifyJWT ,getCurrentUser)
    router.route("/updateAccountDetails").patch(verifyJWT ,updateAccountDetails)
    router.route("/updateUserAvatar").put(verifyJWT, upload.single("avatar") ,updateUserAvatar)
+
+  router.route("/updateAllUserRanks").post(verifyJWT , updateAllUserRanks)
+
 
 
 
