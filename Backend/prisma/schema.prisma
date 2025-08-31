@@ -99,7 +99,7 @@ model Reward {
   description String?
   pointsReq   Int
   claims      RewardClaim[]
-  imageUrl    String
+  imageUrl    String?
 }
 
 model RewardClaim {

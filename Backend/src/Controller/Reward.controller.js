@@ -58,9 +58,9 @@ const AllReward = async (req, res) => {
 const DeleteReward = async (req, res) => {
   const { rewardId } = req.params;
 
-  if (!req.user || req.user.role !== "ADMIN") {
-    throw new ApiError(403, "You are not authorized to delete a reward.");
-  }
+  // if (!req.user || req.user.role !== "ADMIN") {
+  //   throw new ApiError(403, "You are not authorized to delete a reward.");
+  // }
 
   try {
     const reward = await prisma.reward.findUnique({
@@ -78,9 +78,9 @@ const DeleteReward = async (req, res) => {
       where: { id: rewardId },
     });
 
-    if (reward.imageUrl) {
-      await deleteOnCloudinary(reward.imageUrl);
-    }
+    // if (reward.imageUrl) {
+    //   await deleteOnCloudinary(reward.imageUrl);
+    // }
 
     return res
       .status(200)
