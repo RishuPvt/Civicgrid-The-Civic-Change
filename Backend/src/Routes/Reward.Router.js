@@ -17,7 +17,7 @@ router
   .route("/admin/createReward")
   .post(verifyJWT, upload.single("imageUrl"), createReward);
 
-router.route("/AllReward").get(verifyJWT, AllReward);
+router.route("/AllReward").get( AllReward);
 
 router.route("/admin/DeleteReward/:rewardId").delete(verifyJWT, DeleteReward);
 
