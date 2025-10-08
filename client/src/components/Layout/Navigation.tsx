@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   Home,
   BarChart3,
@@ -15,10 +15,10 @@ import {
   PlusSquare,
   Menu,
   X,
-  ArrowRight
-} from 'lucide-react';
-import { useAuth } from '../../context/AuthContext.tsx';
-import { motion, AnimatePresence } from 'framer-motion';
+  ArrowRight,
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext.tsx";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Navigation: React.FC = () => {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -27,24 +27,24 @@ const Navigation: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate("/login");
   };
 
   const loggedInNavItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: BarChart3 },
-    { path: '/map', label: 'Tasks Map', icon: Map },
-    { path: '/tasks', label: 'Nearby Tasks', icon: ListChecks },
-    { path: '/submit-report', label: 'Submit Report', icon: FileText },
-    { path: '/create-event', label: 'Create Event', icon: PlusSquare },
-    { path: '/rewards', label: 'Rewards', icon: Gift },
-    { path: '/my-contributions', label: 'My Reports', icon: History }
+    { path: "/dashboard", label: "Dashboard", icon: BarChart3 },
+    { path: "/map", label: "Tasks Map", icon: Map },
+    { path: "/tasks", label: "Nearby Tasks", icon: ListChecks },
+    { path: "/submit-report", label: "Submit Report", icon: FileText },
+    { path: "/create-event", label: "Create Event", icon: PlusSquare },
+    { path: "/rewards", label: "Rewards", icon: Gift },
+    { path: "/my-contributions", label: "My Reports", icon: History },
   ];
 
   const loggedOutNavItems = [
-    { path: '/', label: 'Home', icon: Home },
-    { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-    { path: '/login', label: 'Login', icon: LogIn },
-    { path: '/register', label: 'Register', icon: UserPlus }
+    { path: "/", label: "Home", icon: Home },
+    { path: "/leaderboard", label: "Leaderboard", icon: Trophy },
+    { path: "/login", label: "Login", icon: LogIn },
+    { path: "/register", label: "Register", icon: UserPlus },
   ];
 
   const navItems = user ? loggedInNavItems : loggedOutNavItems;
@@ -71,8 +71,8 @@ const Navigation: React.FC = () => {
             className={({ isActive }) =>
               `flex items-center space-x-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                 isActive
-                  ? 'text-white bg-gradient-to-r from-green-500 to-blue-500 shadow-lg'
-                  : 'text-gray-600 hover:bg-gray-100'
+                  ? "text-white bg-gradient-to-r from-green-500 to-blue-500 shadow-lg"
+                  : "text-gray-600 hover:bg-gray-100"
               }`
             }
           >
@@ -98,9 +98,11 @@ const Navigation: React.FC = () => {
                 className="w-10 h-10 rounded-full border-2 border-green-200 object-cover"
               />
               <div className="flex-1 text-left">
-                <div className="text-sm font-medium text-gray-900">{user.name}</div>
+                <div className="text-sm font-medium text-gray-900">
+                  {user.name}
+                </div>
                 <div className="text-xs text-green-600 font-semibold">
-                  0 pts 
+                  {user.civicScore}
                 </div>
               </div>
               <ArrowRight className="w-5 h-5 text-gray-400" />
@@ -150,10 +152,10 @@ const Navigation: React.FC = () => {
               onClick={() => setMobileMenuOpen(false)}
             />
             <motion.div
-              initial={{ x: '-100%' }}
+              initial={{ x: "-100%" }}
               animate={{ x: 0 }}
-              exit={{ x: '-100%' }}
-              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50"
             >
               <SidebarContent />

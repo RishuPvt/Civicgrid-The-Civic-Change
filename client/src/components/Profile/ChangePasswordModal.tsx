@@ -1,8 +1,9 @@
-
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Lock, Key, Save } from 'lucide-react';
 import { useToast } from '../../context/ToastContext';
+import axios from 'axios';
+import { backendUrl } from '../../API/BackendUrl';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -14,19 +15,45 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (newPassword !== confirmPassword) {
       addToast('New passwords do not match.', 'error');
       return;
     }
-    // In a real app, this would send the data to the backend
-    addToast('Password changed successfully!', 'success');
-    onClose(); // Close the modal on success
-    setOldPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+
+    setIsLoading(true);
+
+    try {
+      const response = await axios.post(
+        `${backendUrl}/users/changeCurrentPassword`,
+        {
+          oldPassword,
+          newPassword,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.data.success) {
+        addToast(response.data.message || 'Password changed successfully!', 'success');
+        onClose();
+        setOldPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+      }
+    } catch (error: any) {
+      console.error('Change password error:', error);
+      const errorMessage =
+        error.response?.data?.message || 'Failed to change password. Please try again.';
+      addToast(errorMessage, 'error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -52,10 +79,17 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
             >
               <X className="w-6 h-6" />
             </button>
-            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">Change Password</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-6 text-center">
+              Change Password
+            </h2>
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label htmlFor="oldPassword"  className="block text-sm font-medium text-gray-700 mb-1">Old Password</label>
+                <label
+                  htmlFor="oldPassword"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Old Password
+                </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -69,7 +103,12 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                 </div>
               </div>
               <div>
-                <label htmlFor="newPassword"  className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+                <label
+                  htmlFor="newPassword"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  New Password
+                </label>
                 <div className="relative">
                   <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -83,7 +122,12 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
                 </div>
               </div>
               <div>
-                <label htmlFor="confirmPassword"  className="block text-sm font-medium text-gray-700 mb-1">Confirm New Password</label>
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Confirm New Password
+                </label>
                 <div className="relative">
                   <Key className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
@@ -98,10 +142,11 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({ isOpen, onClo
               </div>
               <button
                 type="submit"
-                className="w-full flex justify-center items-center space-x-2 py-3 px-4 rounded-lg text-white font-semibold bg-gradient-to-r from-gray-700 to-gray-800 hover:opacity-90"
+                disabled={isLoading}
+                className="w-full flex justify-center items-center space-x-2 py-3 px-4 rounded-lg text-white font-semibold bg-gradient-to-r from-gray-700 to-gray-800 hover:opacity-90 disabled:opacity-50"
               >
                 <Save className="w-5 h-5" />
-                <span>Update Password</span>
+                <span>{isLoading ? 'Updating...' : 'Update Password'}</span>
               </button>
             </form>
           </motion.div>
