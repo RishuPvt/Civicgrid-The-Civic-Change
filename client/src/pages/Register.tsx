@@ -1,45 +1,82 @@
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { UserPlus, Mail, Lock, User } from "lucide-react";
 
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { UserPlus, Mail, Lock, User } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-
+import { backendUrl } from "../API/BackendUrl";
+import { toast } from "react-toastify";
+import axios from "axios";
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [isLoading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+  });
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
 
-  const handleSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!displayName || !email || !password) {
-      alert('Please fill out all fields.');
-      return;
+    try {
+      const response = await axios.post(
+        `${backendUrl}/users/RegisterUser`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+
+      if (response.data.success) {
+        toast.success(response.data.message || "user registered successfully!");
+        navigate("/login"); // Navigate to the dashboard or target page
+      }
+
+      if (response.status === 409) {
+        toast.error("user with Email. already exists");
+      }
+      if (response.status === 500) {
+        const errorMessage =
+          response.data.message || "Authentication failed. Please try again.";
+        toast.error(errorMessage);
+      }
+    } catch (error: any) {
+      console.error("Caught error:", error);
+
+      const errorMessage =
+        error.response?.data?.message ||
+        "Failed to authenticate. Please try again.";
+      console.error(errorMessage);
+    } finally {
+      setLoading(false);
     }
-    const mockUserData = { name: displayName, email: email };
-    login(mockUserData);
-
-    // THIS IS THE NEW LINE: Set a flag for the dashboard to see
-    sessionStorage.setItem('isNewUser', 'true');
-
-    navigate('/dashboard');
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-6">
         <div className="text-center">
-          <h2 className="text-3xl font-bold text-gray-900">Create Your Account</h2>
-          <p className="mt-2 text-gray-600">Join the movement for a better city.</p>
+          <h2 className="text-3xl font-bold text-gray-900">
+            Create Your Account
+          </h2>
+          <p className="mt-2 text-gray-600">
+            Join the movement for a better city.
+          </p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="text"
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
+              id="name"
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
               placeholder="Your Name"
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
               required
@@ -49,8 +86,10 @@ const RegisterPage: React.FC = () => {
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
               placeholder="Email Address"
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
               required
@@ -60,8 +99,10 @@ const RegisterPage: React.FC = () => {
             <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
             <input
               type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              id="password"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
               placeholder="Create a Password"
               className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition"
               required
@@ -76,8 +117,11 @@ const RegisterPage: React.FC = () => {
           </button>
         </form>
         <p className="text-center text-sm text-gray-600">
-          Already have an account?{' '}
-          <Link to="/login" className="font-medium text-green-600 hover:text-green-500">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="font-medium text-green-600 hover:text-green-500"
+          >
             Login
           </Link>
         </p>
