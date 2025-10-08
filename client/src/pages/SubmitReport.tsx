@@ -1,39 +1,53 @@
-import React, { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Camera, MapPin, Upload, CheckCircle, X, LocateFixed, Video } from 'lucide-react';
-import { useToast } from '../context/ToastContext';
+import React, { useState, useRef } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Camera,
+  MapPin,
+  Upload,
+  CheckCircle,
+  X,
+  LocateFixed,
+  Video,
+} from "lucide-react";
+import { useToast } from "../context/ToastContext";
+import axios from "axios";
+import { backendUrl } from "../API/BackendUrl";
 
 const SubmitReportPage: React.FC = () => {
   const { addToast } = useToast();
-  const [title, setTitle] = useState('');
-  const [issueType, setIssueType] = useState('');
-  const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
+  const [title, setTitle] = useState("");
+  const [issueType, setIssueType] = useState("");
+  const [description, setDescription] = useState("");
+  const [location, setLocation] = useState("");
   const [mediaFiles, setMediaFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const issueTypes = [
-    'Garbage/Waste',
-    'Pothole',
-    'Water Leak',
-    'Streetlight Issue',
-    'Traffic Problem',
-    'Graffiti',
-    'Broken Infrastructure',
-    'Other',
+    "Garbage/Waste",
+    "Pothole",
+    "Water Leak",
+    "Streetlight Issue",
+    "Traffic Problem",
+    "Graffiti",
+    "Broken Infrastructure",
+    "Other",
   ];
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const newFiles = Array.from(event.target.files);
+
       if (mediaFiles.length + newFiles.length > 3) {
-        addToast('You can upload a maximum of 3 files.', 'error');
+        addToast("You can upload a maximum of 3 files.", "error");
+
         return;
       }
+
       setMediaFiles((prevFiles) => [...prevFiles, ...newFiles]);
-      addToast('Files selected successfully!', 'success');
+
+      addToast("Files selected successfully!", "success");
     }
   };
 
@@ -45,50 +59,111 @@ const SubmitReportPage: React.FC = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          setLocation(`${position.coords.latitude.toFixed(6)}, ${position.coords.longitude.toFixed(6)}`);
-          addToast('Location fetched successfully!', 'success');
+          setLocation(
+            `${position.coords.latitude.toFixed(
+              6
+            )}, ${position.coords.longitude.toFixed(6)}`
+          );
+          addToast("Location fetched successfully!", "success");
         },
         () => {
-          addToast('Unable to get location. Please enable location services.', 'error');
+          addToast(
+            "Unable to get location. Please enable location services.",
+            "error"
+          );
         }
       );
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // Updated handleSubmit function
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (mediaFiles.length === 0) {
-      addToast('Please upload at least one image or video.', 'error');
+      addToast("Please upload at least one image or video.", "error");
       return;
     }
+
     setIsSubmitting(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      // 1. Parse the location string into separate latitude and longitude values
+      const [latitudeStr, longitudeStr] = location
+        .split(",")
+        .map((s) => s.trim());
+      const latitude = parseFloat(latitudeStr);
+      const longitude = parseFloat(longitudeStr);
+
+      // 2. Create a FormData object to handle files and text data
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("description", description);
+      formData.append("latitude", latitude.toString());
+      formData.append("longitude", longitude.toString());
+
+      // 3. Append each file to the FormData object
+      mediaFiles.forEach((file) => {
+        formData.append("imageUrl", file); // 'images' must match the field name in your Multer config
+      });
+
+      // 4. Send the data to the backend API
+      const response = await axios.post(
+        `${backendUrl}/users/task/CreateTask`,
+        formData,
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+
+      // 5. Handle success
       setShowSuccess(true);
-      
+      addToast("Report submitted successfully!", "success");
+
       // Reset form after success message
       setTimeout(() => {
         setShowSuccess(false);
-        setTitle('');
-        setDescription('');
-        setIssueType('');
-        setLocation('');
+        setTitle("");
+        setDescription("");
+        setIssueType("");
+        setLocation("");
         setMediaFiles([]);
       }, 3000);
-    }, 2000);
+    } catch (error) {
+      console.error("Failed to submit report:", error);
+      addToast(
+        error.response?.data?.message ||
+          "Failed to submit report. Please try again.",
+        "error"
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <>
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Submit a New Report</h1>
-        <p className="text-gray-600 mb-6">Help improve your community by reporting issues that need attention.</p>
-        <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-lg max-w-3xl mx-auto space-y-6">
-          
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Submit a New Report
+        </h1>
+        <p className="text-gray-600 mb-6">
+          Help improve your community by reporting issues that need attention.
+        </p>
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white p-8 rounded-2xl shadow-lg max-w-3xl mx-auto space-y-6"
+        >
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Report Title</label>
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Report Title
+            </label>
             <input
               id="title"
               type="text"
@@ -101,7 +176,12 @@ const SubmitReportPage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="issueType" className="block text-sm font-medium text-gray-700 mb-1">Issue Type</label>
+            <label
+              htmlFor="issueType"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Issue Type
+            </label>
             <select
               id="issueType"
               value={issueType}
@@ -111,26 +191,34 @@ const SubmitReportPage: React.FC = () => {
             >
               <option value="">Select an issue type</option>
               {issueTypes.map((type) => (
-                <option key={type} value={type}>{type}</option>
+                <option key={type} value={type}>
+                  {type}
+                </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Upload Images or a Short Video (up to 3 files)</label>
-            <div 
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Upload Images or a Short Video (up to 3 files)
+            </label>
+            <div
               className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
             >
               <div className="space-y-1 text-center">
                 <Camera className="mx-auto h-12 w-12 text-gray-400" />
-                <p className="text-sm text-gray-600">Click to upload or drag and drop</p>
-                <p className="text-xs text-gray-500">PNG, JPG, MP4, MOV up to 25MB</p>
+                <p className="text-sm text-gray-600">
+                  Click to upload or drag and drop
+                </p>
+                <p className="text-xs text-gray-500">
+                  PNG, JPG, MP4, MOV up to 25MB
+                </p>
               </div>
             </div>
-            <input 
+            <input
               ref={fileInputRef}
-              type="file" 
+              type="file"
               multiple
               accept="image/*,video/*"
               onChange={handleFileChange}
@@ -142,10 +230,10 @@ const SubmitReportPage: React.FC = () => {
             <div className="grid grid-cols-3 gap-4">
               {mediaFiles.map((file, index) => (
                 <div key={index} className="relative">
-                  {file.type.startsWith('image/') ? (
-                    <img 
-                      src={URL.createObjectURL(file)} 
-                      alt={`preview ${index}`} 
+                  {file.type.startsWith("image/") ? (
+                    <img
+                      src={URL.createObjectURL(file)}
+                      alt={`preview ${index}`}
                       className="w-full h-32 object-cover rounded-lg"
                     />
                   ) : (
@@ -153,7 +241,7 @@ const SubmitReportPage: React.FC = () => {
                       <Video className="w-10 h-10 text-white" />
                     </div>
                   )}
-                  <button 
+                  <button
                     type="button"
                     onClick={() => removeMedia(index)}
                     className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full"
@@ -166,7 +254,12 @@ const SubmitReportPage: React.FC = () => {
           )}
 
           <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Description
+            </label>
             <textarea
               id="description"
               rows={4}
@@ -179,7 +272,12 @@ const SubmitReportPage: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <label
+              htmlFor="location"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Location
+            </label>
             <div className="flex items-center space-x-2">
               <div className="relative flex-grow">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -208,7 +306,9 @@ const SubmitReportPage: React.FC = () => {
             type="submit"
             disabled={isSubmitting}
             className={`w-full flex justify-center items-center space-x-2 py-3 px-4 rounded-lg text-white font-semibold transition-all ${
-              isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-gradient-to-r from-green-500 to-blue-500 hover:opacity-90'
+              isSubmitting
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-gradient-to-r from-green-500 to-blue-500 hover:opacity-90"
             }`}
           >
             {isSubmitting ? (
@@ -247,10 +347,11 @@ const SubmitReportPage: React.FC = () => {
                 Report Submitted!
               </h3>
               <p className="text-gray-600 mb-4">
-                Thank you for helping improve our community. Your report is under review.
+                Thank you for helping improve our community. Your report is
+                under review.
               </p>
               <div className="text-green-600 font-semibold">
-                +50 Civic Points Earned!
+                +10 Civic Points Earned!
               </div>
             </motion.div>
           </motion.div>
