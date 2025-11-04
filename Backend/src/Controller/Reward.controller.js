@@ -123,7 +123,7 @@ const ClaimedReward = async (req, res) => {
     });
 
     if (alreadyClaimed) {
-      throw new ApiError(409, "You have already claimed this reward.");
+      throw new ApiResponse(409, "You have already claimed this reward.");
     }
 
     const newCivicScore = user.civicScore - reward.pointsReq;
