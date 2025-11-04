@@ -227,8 +227,9 @@ const getCurrentUser = async (req, res) => {
         avatar: true,
         civicScore: true,
         rank: true,
-        badges : true,
-        address: true,
+        badges: true,
+        longitude: true,
+        latitude: true,
         role: true,
         createdAt: true,
       },
@@ -247,14 +248,14 @@ const getCurrentUser = async (req, res) => {
 };
 
 const updateAccountDetails = async (req, res) => {
-  const { name, email, address } = req.body;
+  const { name, email, latitude, longitude } = req.body;
 
   if (!req.user) {
     throw new ApiError(401, "Unauthorized access");
   }
 
   // Check if at least one field is provided
-  if (!name && !email && !address) {
+  if (!name && !email && !longitude && !latitude) {
     throw new ApiError(
       400,
       "At least one field (name, email, or address) is required"
@@ -277,13 +278,15 @@ const updateAccountDetails = async (req, res) => {
       data: {
         name: name || undefined,
         email: email || undefined,
-        address: address || undefined,
+        longitude: longitude || undefined,
+        latitude: latitude || undefined,
       },
       select: {
         id: true,
         name: true,
         email: true,
-        address: true,
+        longitude: true,
+        longitude: true,
         updatedAt: true,
       },
     });
@@ -364,11 +367,9 @@ const updateUserAvatar = async (req, res) => {
 
 const updateAllUserRanks = async (req, res) => {
   try {
-    // Fetch all users, sorted by civicScore in descending order.
+    // Fetch all users sorted by civicScore
     const users = await prisma.user.findMany({
-      orderBy: {
-        civicScore: "desc",
-      },
+      orderBy: { civicScore: "desc" },
       select: {
         id: true,
         civicScore: true,
@@ -378,25 +379,101 @@ const updateAllUserRanks = async (req, res) => {
       },
     });
 
-    // Loop through the sorted users and update their rank.
-    // Prisma's `updateMany` cannot be used here because the new rank depends on the index.
-    const updatePromises = users.map(async (user, index) => {
-      const newRank = index + 1;
-      return prisma.user.update({
-        where: { id: user.id },
-        data: { rank: newRank },
-      });
-    });
-
-    await Promise.all(updatePromises);
+    // Update ranks and collect updated user objects
+    const updatedUsers = await Promise.all(
+      users.map(async (user, index) => {
+        const newRank = index + 1;
+        return prisma.user.update({
+          where: { id: user.id },
+          data: { rank: newRank },
+          select: {
+            id: true,
+            name: true,
+            avatar: true,
+            badges: true,
+            civicScore: true,
+            rank: true, // ✅ include rank in response
+          },
+        });
+      })
+    );
 
     return res.status(200).json({
       message: "User ranks updated successfully.",
-      updatedCount: users.length,
-      user: users,
+      updatedCount: updatedUsers.length,
+      users: updatedUsers, // ✅ return updated users with ranks
     });
   } catch (error) {
-    throw new ApiError(500, error.message || "Failed to update user ranks.");
+    console.error(error);
+    return res.status(500).json({
+      message: error.message || "Failed to update user ranks.",
+    });
+  }
+};
+
+
+// Haversine formula to calculate distance between two lat/lon in km
+const getDistanceInKm = (lat1, lon1, lat2, lon2) => {
+  const toRad = (val) => (val * Math.PI) / 180;
+
+  const R = 6371; // Earth radius in km
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // distance in km
+};
+
+ const getNearbyTasks = async (req, res) => {
+  try {
+    const userId = req.user?.id; 
+    if (!userId) {
+      throw new ApiError(401, "User not authenticated");
+    }
+
+    // Fetch user location
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { latitude: true, longitude: true },
+    });
+
+    if (!user?.latitude || !user?.longitude) {
+      throw new ApiError(400, "User location not set");
+    }
+
+    const tasks = await prisma.task.findMany({
+      where: { status: "PENDING_VERIFICATION" }, 
+      include: {
+        creator: { select: { name: true } },
+      },
+      orderBy: { createdAt: "desc" },
+    });
+
+    // Filter tasks by radius (e.g., 10km)
+    const radiusKm = parseFloat(req.query.radius) || 10;
+
+    const nearbyTasks = tasks.filter((task) => {
+      const distance = getDistanceInKm(
+        user.latitude,
+        user.longitude,
+        task.latitude,
+        task.longitude
+      );
+      return distance <= radiusKm;
+    });
+
+    return res
+      .status(200)
+      .json(new ApiResponse(200, nearbyTasks, "Nearby tasks fetched successfully"));
+  } catch (error) {
+    throw new ApiError(500, error.message || "Failed to fetch nearby tasks");
   }
 };
 
@@ -409,6 +486,7 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateAllUserRanks,
+  getNearbyTasks
 };
 
 // const geocodingService = async (address) => {

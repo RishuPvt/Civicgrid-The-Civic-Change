@@ -8,7 +8,7 @@ import { prisma } from "../DB/DataBase.js";
 
 const getAndAssignBadges = async (userId, civicScore) => {
   try {
-    let badgeToAssign = null;
+    let badgeToAssign = Newbie;
     let pointsRequired = 0;
 
     // Determine which badge to assign based on civicScore
@@ -38,7 +38,6 @@ const getAndAssignBadges = async (userId, civicScore) => {
       });
     }
 
-
     const userHasBadge = await prisma.user.findFirst({
       where: {
         id: userId,
@@ -67,57 +66,84 @@ const getAndAssignBadges = async (userId, civicScore) => {
 };
 
 const CreateTask = async (req, res) => {
-    const { title, description, latitude, longitude } = req.body;
-    const imageUrlLocalPath = req.file?.path;
+  const { title, description, latitude, longitude } = req.body;
 
-    if (!req.user) {
-        throw new ApiError(401, "Unauthorized access");
-    }
+  const imageUrlLocalPaths = req.files;
 
-    if (!title || !description || !latitude || !longitude) {
-        throw new ApiError(400, "Title, description, latitude, and longitude are required");
-    }
+  if (!req.user) {
+    throw new ApiError(401, "Unauthorized access");
+  }
 
+  if (!title || !description || !latitude || !longitude) {
+    throw new ApiError(
+      400,
+      "Title, description, latitude, and longitude are required"
+    );
+  }
+
+  const imageUrls = [];
+  if (imageUrlLocalPaths && imageUrlLocalPaths.length > 0) {
     try {
-        const imageUrl = imageUrlLocalPath
-            ? await uploadOnCloudinary(imageUrlLocalPath)
-            : null;
-        if (imageUrlLocalPath && !imageUrl) {
-            throw new ApiError(500, "Failed to upload image to cloudinary");
-        }
+      // Concurrently upload all images to Cloudinary
+      const uploadPromises = imageUrlLocalPaths.map((file) =>
+        uploadOnCloudinary(file.path)
+      );
+      const uploadedImages = await Promise.all(uploadPromises);
 
-        // 1. Create the new task
-        const task = await prisma.task.create({
-            data: {
-                title,
-                description,
-                latitude: parseFloat(latitude),
-                longitude: parseFloat(longitude),
-                imageUrl: imageUrl?.url,
-                creatorId: req.user.id,
-            },
-        });
+      // Filter out any failed uploads and get the URLs
+      const validImageUrls = uploadedImages
+        .filter((image) => image && image.url)
+        .map((image) => image.url);
 
-        // 2. Award 10 points to the user
-        const updatedUser = await prisma.user.update({
-            where: { id: req.user.id },
-            data: {
-                civicScore: {
-                    increment: 10,
-                },
-            },
-        });
+      if (validImageUrls.length !== imageUrlLocalPaths.length) {
+        throw new ApiError(
+          500,
+          "Failed to upload one or more images to cloudinary"
+        );
+      }
 
-        // 3. Check and assign badges based on the new score
-        await getAndAssignBadges(req.user.id, updatedUser.civicScore);
-
-        return res
-            .status(201)
-            .json(new ApiResponse(201, task, "Task created and 10 points awarded successfully"));
+      imageUrls.push(...validImageUrls);
     } catch (error) {
-        throw new ApiError(500, error.message || "Failed to create task");
+      throw new ApiError(500, error.message || "Failed to upload images");
     }
   }
+
+  try {
+    const task = await prisma.task.create({
+      data: {
+        title,
+        description,
+        latitude: parseFloat(latitude),
+        longitude: parseFloat(longitude),
+        imageUrl: imageUrls,
+        creatorId: req.user.id,
+      },
+    });
+
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        civicScore: {
+          increment: 10,
+        },
+      },
+    });
+
+    await getAndAssignBadges(req.user.id, updatedUser.civicScore);
+
+    return res
+      .status(201)
+      .json(
+        new ApiResponse(
+          201,
+          task,
+          "Task created and 10 points awarded successfully"
+        )
+      );
+  } catch (error) {
+    throw new ApiError(500, error.message || "Failed to create task");
+  }
+};
 
 const GetAllTasks = async (req, res) => {
   const { status, limit = 10, page = 1 } = req.query;
@@ -216,50 +242,40 @@ const GetTasksbyUser = async (req, res) => {
   }
 };
 
-const VoteonTask = async (req, res) => {
-  const { taskId } = req.params;
-  const { value } = req.body;
-
-  if (!req.user) {
-    throw new ApiError(401, "Unauthorized access");
-  }
-
-  if (typeof value !== "boolean") {
-    throw new ApiError(400, "Vote value must be a boolean (true/false)");
-  }
-
+const getTaskDetails = async (req, res) => {
   try {
-    const existingVote = await prisma.vote.findFirst({
-      where: {
-        taskId,
-        voterId: req.user.id,
-      },
-    });
+    const { taskId } = req.params;
 
-    if (existingVote) {
-      throw new ApiError(409, "User has already voted on this task");
+    if (!taskId) {
+      throw new ApiError(400, "Task ID is required");
     }
 
-    const vote = await prisma.vote.create({
-      data: {
-        taskId,
-        voterId: req.user.id,
-        value,
+    // Fetch the task by ID
+    const task = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: {
+        creator: {
+          select: { id: true, name: true, avatar: true },
+        },
+        comments : {
+          select :{ content : true , author : true}
+        }
       },
     });
 
-    // Call the new handler after the vote is created
-    await processTaskVotes(taskId);
+    if (!task) {
+      throw new ApiError(404, "Task not found");
+    }
 
-    await processVoteForStatusUpdate(taskId);
-
+    // Return full task details
     return res
-      .status(201)
-      .json(new ApiResponse(201, vote, "Vote cast successfully"));
+      .status(200)
+      .json(new ApiResponse(200, task, "Task details fetched successfully"));
   } catch (error) {
-    throw new ApiError(500, error.message || "Failed to vote on task");
+    throw new ApiError(500, error.message || "Failed to fetch task details");
   }
 };
+
 //  handler to check and delete task  based on votes
 const processTaskVotes = async (taskId) => {
   try {
@@ -345,7 +361,52 @@ const processVoteForStatusUpdate = async (taskId) => {
     console.error("Error processing vote for status update:", error);
   }
 };
+const VoteonTask = async (req, res) => {
+  const { taskId } = req.params;
+  const { value } = req.body;
 
+  if (!req.user) {
+    throw new ApiError(401, "Unauthorized access");
+  }
+
+  if (typeof value !== "boolean") {
+    throw new ApiError(400, "Vote value must be a boolean (true/false)");
+  }
+
+  try {
+    const existingVote = await prisma.vote.findFirst({
+      where: {
+        taskId,
+        voterId: req.user.id,
+      },
+    });
+
+    if (existingVote) {
+      return res
+        .status(201)
+        .json(new ApiResponse(201, {}, "User has already voted on this task"));
+    }
+
+    const vote = await prisma.vote.create({
+      data: {
+        taskId,
+        voterId: req.user.id,
+        value,
+      },
+    });
+
+    // Call the new handler after the vote is created
+    await processTaskVotes(taskId);
+
+    await processVoteForStatusUpdate(taskId);
+
+    return res
+      .status(201)
+      .json(new ApiResponse(201, vote, "Vote cast successfully"));
+  } catch (error) {
+    throw new ApiError(500, error.message || "Failed to vote on task");
+  }
+};
 const AddComment = async (req, res) => {
   const { taskId } = req.params;
   const { content } = req.body;
@@ -386,12 +447,9 @@ const AddComment = async (req, res) => {
   }
 };
 
-
-
 const updateCivicScore = async (req, res) => {
   const userId = req.user.id;
   const { pointsToAdd } = req.body;
-
 
   try {
     const user = await prisma.user.findUnique({
@@ -432,5 +490,6 @@ export {
   AddComment,
   processTaskVotes,
   VoteonTask,
-  updateCivicScore
+  updateCivicScore,
+  getTaskDetails,
 };

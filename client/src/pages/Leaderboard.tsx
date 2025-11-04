@@ -1,42 +1,102 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Trophy, Medal, Award, Filter } from 'lucide-react';
-import { leaderboardData, currentUser } from '../data/mockData';
+// FILE: src/components/Dashboard/Leaderboard.tsx
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import { Trophy, Medal, Award, Filter , RefreshCw} from "lucide-react";
+import axios from "axios";
+import { backendUrl } from "../API/BackendUrl";
+import { toast } from "react-toastify";
+
+interface User {
+  id: string;
+  name: string;
+  avatar: string;
+  civicScore: number;
+  badges: string[];
+  rank: number;
+}
 
 const Leaderboard: React.FC = () => {
-  const [filter, setFilter] = useState('all-time');
+  const [filter, setFilter] = useState("all-time");
+  const [leaderboardData, setLeaderboardData] = useState<User[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
   const filters = [
-    { key: 'weekly', label: 'This Week' },
-    { key: 'monthly', label: 'This Month' },
-    { key: 'all-time', label: 'All Time' },
+    { key: "weekly", label: "This Week" },
+    { key: "monthly", label: "This Month" },
+    { key: "all-time", label: "All Time" },
   ];
+
+  useEffect(() => {
+    const fetchLeaderboard = async () => {
+      try {
+        // fetch all users with rank
+        const res = await axios.post(`${backendUrl}/users/updateAllUserRanks`, {
+          withCredentials: true,
+        });
+        setLeaderboardData(res.data.users);
+
+        // fetch current user
+        const me = await axios.get(`${backendUrl}/users/getCurrentUser`, {
+          withCredentials: true,
+        });
+        setCurrentUser(me.data.user);
+      } catch (err) {
+        toast.error("Failed to fetch leaderboard");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLeaderboard();
+  }, []);
 
   const getRankIcon = (rank: number) => {
     if (rank === 1) return <Trophy className="w-6 h-6 text-yellow-500" />;
     if (rank === 2) return <Medal className="w-6 h-6 text-gray-400" />;
     if (rank === 3) return <Award className="w-6 h-6 text-amber-600" />;
-    return <div className="w-6 h-6 flex items-center justify-center font-bold text-gray-500">#{rank}</div>;
+    return (
+      <div className="w-6 h-6 flex items-center justify-center font-bold text-gray-500">
+        #{rank}
+      </div>
+    );
   };
 
-  const getRankBadge = (rank: number) => {
-    if (rank === 1) return 'bg-gradient-to-r from-yellow-400 to-yellow-600';
-    if (rank === 2) return 'bg-gradient-to-r from-gray-300 to-gray-500';
-    if (rank === 3) return 'bg-gradient-to-r from-amber-400 to-amber-600';
-    return 'bg-gradient-to-r from-civic-500 to-civic-600';
-  };
+  if (loading) {
+    return (
+      <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-100 bg-opacity-80">
+          <div className="flex flex-col items-center">
+            <RefreshCw className="w-8 h-8 text-green-500 animate-spin" />
+            <p className="mt-2 text-gray-700 font-semibold">Loading leaderboard...</p>
+          </div>
+        </div>
+    );
+  }
+
+  if (leaderboardData.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <p className="text-gray-600">No leaderboard data available</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
           className="mb-8"
         >
-          <h1 className="font-poppins font-bold text-3xl text-gray-900 mb-2">Community Leaderboard</h1>
-          <p className="text-gray-600">See how you rank among fellow civic champions in your city.</p>
+          <h1 className="font-poppins font-bold text-3xl text-gray-900 mb-2">
+            Community Leaderboard
+          </h1>
+          <p className="text-gray-600">
+            See how you rank among fellow civic champions in your city.
+          </p>
         </motion.div>
 
         {/* Filters */}
@@ -58,8 +118,8 @@ const Leaderboard: React.FC = () => {
                   onClick={() => setFilter(filterOption.key)}
                   className={`px-4 py-2 rounded-xl font-medium transition-colors ${
                     filter === filterOption.key
-                      ? 'bg-civic-500 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? "bg-civic-500 text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
                   {filterOption.label}
@@ -69,111 +129,92 @@ const Leaderboard: React.FC = () => {
           </div>
         </motion.div>
 
-        {/* Top 3 Podium */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.2 }}
-          className="mb-8"
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            {/* Second Place */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
-              className="bg-white rounded-3xl p-6 shadow-lg text-center order-3 md:order-1"
-            >
-              <div className="relative mb-4">
-                <img
-                  src={leaderboardData[1].avatar}
-                  alt={leaderboardData[1].name}
-                  className="w-20 h-20 rounded-full mx-auto border-4 border-gray-300"
-                />
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">2</span>
+        {/* Podium (Top 3) */}
+        {leaderboardData.length >= 3 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="mb-8"
+          >
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              {/* Second Place */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+                className="bg-white rounded-3xl p-6 shadow-lg text-center order-3 md:order-1"
+              >
+                <div className="relative mb-4">
+                  <img
+                    src={leaderboardData[1].avatar}
+                    alt={leaderboardData[1].name}
+                    className="w-20 h-20 rounded-full mx-auto border-4 border-gray-300"
+                  />
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">2</span>
+                  </div>
                 </div>
-              </div>
-              <h3 className="font-poppins font-semibold text-lg text-gray-900 mb-2">
-                {leaderboardData[1].name}
-              </h3>
-              <div className="text-2xl font-bold text-gray-500 mb-4">
-                {leaderboardData[1].civicScore.toLocaleString()}
-              </div>
-              <div className="flex flex-wrap gap-1 justify-center">
-                {leaderboardData[1].badges?.slice(0, 2).map((badge) => (
-                  <span key={badge} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
-                    {badge}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
+                <h3 className="font-poppins font-semibold text-lg text-gray-900 mb-2">
+                  {leaderboardData[1].name}
+                </h3>
+                <div className="text-2xl font-bold text-gray-500 mb-4">
+                  {leaderboardData[1].civicScore.toLocaleString()}
+                </div>
+              </motion.div>
 
-            {/* First Place */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.3 }}
-              className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-3xl p-6 shadow-xl text-center text-white transform scale-105 order-1 md:order-2"
-            >
-              <div className="relative mb-4">
-                <img
-                  src={leaderboardData[0].avatar}
-                  alt={leaderboardData[0].name}
-                  className="w-24 h-24 rounded-full mx-auto border-4 border-white"
-                />
-                <div className="absolute -top-3 -right-2 w-10 h-10 bg-yellow-200 rounded-full flex items-center justify-center">
-                  <Trophy className="w-6 h-6 text-yellow-600" />
+              {/* First Place */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.3 }}
+                className="bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-3xl p-6 shadow-xl text-center text-white transform scale-105 order-1 md:order-2"
+              >
+                <div className="relative mb-4">
+                  <img
+                    src={leaderboardData[0].avatar}
+                    alt={leaderboardData[0].name}
+                    className="w-24 h-24 rounded-full mx-auto border-4 border-white"
+                  />
+                  <div className="absolute -top-3 -right-2 w-10 h-10 bg-yellow-200 rounded-full flex items-center justify-center">
+                    <Trophy className="w-6 h-6 text-yellow-600" />
+                  </div>
                 </div>
-              </div>
-              <h3 className="font-poppins font-semibold text-xl mb-2">
-                {leaderboardData[0].name}
-              </h3>
-              <div className="text-3xl font-bold mb-4">
-                {leaderboardData[0].civicScore.toLocaleString()}
-              </div>
-              <div className="flex flex-wrap gap-1 justify-center">
-                {leaderboardData[0].badges?.slice(0, 2).map((badge) => (
-                  <span key={badge} className="text-xs bg-white/20 text-white px-2 py-1 rounded-full">
-                    {badge}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
+                <h3 className="font-poppins font-semibold text-xl mb-2">
+                  {leaderboardData[0].name}
+                </h3>
+                <div className="text-3xl font-bold mb-4">
+                  {leaderboardData[0].civicScore.toLocaleString()}
+                </div>
+              </motion.div>
 
-            {/* Third Place */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.5 }}
-              className="bg-white rounded-3xl p-6 shadow-lg text-center order-2 md:order-3"
-            >
-              <div className="relative mb-4">
-                <img
-                  src={leaderboardData[2].avatar}
-                  alt={leaderboardData[2].name}
-                  className="w-20 h-20 rounded-full mx-auto border-4 border-amber-300"
-                />
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm">3</span>
+              {/* Third Place */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6, delay: 0.5 }}
+                className="bg-white rounded-3xl p-6 shadow-lg text-center order-2 md:order-3"
+              >
+                <div className="relative mb-4">
+                  <img
+                    src={leaderboardData[2].avatar}
+                    alt={leaderboardData[2].name}
+                    className="w-20 h-20 rounded-full mx-auto border-4 border-amber-300"
+                  />
+                  <div className="absolute -top-2 -right-2 w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold text-sm">3</span>
+                  </div>
                 </div>
-              </div>
-              <h3 className="font-poppins font-semibold text-lg text-gray-900 mb-2">
-                {leaderboardData[2].name}
-              </h3>
-              <div className="text-2xl font-bold text-amber-600 mb-4">
-                {leaderboardData[2].civicScore.toLocaleString()}
-              </div>
-              <div className="flex flex-wrap gap-1 justify-center">
-                {leaderboardData[2].badges?.slice(0, 2).map((badge) => (
-                  <span key={badge} className="text-xs bg-amber-50 text-amber-600 px-2 py-1 rounded-full">
-                    {badge}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
+                <h3 className="font-poppins font-semibold text-lg text-gray-900 mb-2">
+                  {leaderboardData[2].name}
+                </h3>
+                <div className="text-2xl font-bold text-amber-600 mb-4">
+                  {leaderboardData[2].civicScore.toLocaleString()}
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Full Leaderboard */}
         <motion.div
@@ -183,7 +224,9 @@ const Leaderboard: React.FC = () => {
           className="bg-white rounded-3xl shadow-lg overflow-hidden"
         >
           <div className="p-6 border-b border-gray-100">
-            <h2 className="font-poppins font-semibold text-xl text-gray-900">Full Rankings</h2>
+            <h2 className="font-poppins font-semibold text-xl text-gray-900">
+              Full Rankings
+            </h2>
           </div>
           <div className="divide-y divide-gray-100">
             {leaderboardData.map((user, index) => (
@@ -193,7 +236,9 @@ const Leaderboard: React.FC = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.6, delay: 0.7 + index * 0.1 }}
                 className={`p-6 flex items-center justify-between hover:bg-gray-50 transition-colors ${
-                  user.id === currentUser.id ? 'bg-civic-50 border-l-4 border-l-civic-500' : ''
+                  user.id === currentUser?.id
+                    ? "bg-civic-50 border-l-4 border-l-civic-500"
+                    : ""
                 }`}
               >
                 <div className="flex items-center space-x-4">
@@ -207,8 +252,10 @@ const Leaderboard: React.FC = () => {
                   />
                   <div>
                     <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold text-gray-900">{user.name}</h3>
-                      {user.id === currentUser.id && (
+                      <h3 className="font-semibold text-gray-900">
+                        {user.name}
+                      </h3>
+                      {user.id === currentUser?.id && (
                         <span className="text-xs bg-civic-100 text-civic-600 px-2 py-1 rounded-full font-medium">
                           You
                         </span>
@@ -216,7 +263,10 @@ const Leaderboard: React.FC = () => {
                     </div>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {user.badges?.slice(0, 2).map((badge) => (
-                        <span key={badge} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full">
+                        <span
+                          key={badge}
+                          className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded-full"
+                        >
                           {badge}
                         </span>
                       ))}
