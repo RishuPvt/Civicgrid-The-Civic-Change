@@ -3,7 +3,6 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Award, Edit, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { currentUser } from '../../data/mockData';
 import { useNavigate } from 'react-router-dom';
 
 interface ProfileModalProps {
