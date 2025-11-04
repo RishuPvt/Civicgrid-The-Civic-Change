@@ -35,7 +35,6 @@ const Navigation: React.FC = () => {
     { path: "/map", label: "Tasks Map", icon: Map },
     { path: "/tasks", label: "Nearby Tasks", icon: ListChecks },
     { path: "/submit-report", label: "Submit Report", icon: FileText },
-    { path: "/create-event", label: "Create Event", icon: PlusSquare },
     { path: "/rewards", label: "Rewards", icon: Gift },
     { path: "/my-contributions", label: "My Reports", icon: History },
   ];
