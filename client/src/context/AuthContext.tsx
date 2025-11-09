@@ -1,58 +1,84 @@
-
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import axios from 'axios';
+import { backendUrl } from '../API/BackendUrl'; // Assuming you have this path
 
 interface User {
+  id: string;
   name: string;
   email: string;
-  role: 'USER' | 'ADMIN';
-  avatar: string;
-  address: string;
-  latitude?: number;  // 1. Add optional latitude
-  longitude?: number; // 2. Add optional longitude
+  avatar?: string;
+  civicScore?: number;
+  // Add other user properties you fetch from the backend
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (userData: { name: string; email: string; role?: 'USER' | 'ADMIN' }) => void;
-  logout: () => void;
-  updateUser: (updatedData: Partial<User>) => void;
+  loading: boolean; // Add a loading state to prevent flickering
+  login: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true); // Initial loading state
 
-  const login = (userData: { name: string; email: string; role?: 'USER' | 'ADMIN' }) => {
-    const userWithAllData: User = { 
-      ...userData, 
-      role: userData.role || 'USER',
-      avatar: `https://i.pravatar.cc/150?u=${userData.email}`,
-      address: 'Not Set', // Default address is now "Not Set"
-    };
-    setUser(userWithAllData);
+  // Function to fetch the current user from the backend
+  const fetchCurrentUser = async () => {
+    try {
+      // The `withCredentials` option is essential for sending cookies
+      const response = await axios.get(`${backendUrl}/users/getCurrentUser`, {
+        withCredentials: true,
+      });
+      setUser(response.data.data); // Set the user data from the backend
+    } catch (error) {
+      console.error('Failed to fetch current user:', error);
+      setUser(null); // Clear user state if fetching fails (e.g., token expired)
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const logout = () => {
-    setUser(null);
+  // This useEffect runs only once on app mount to check the authentication status
+  useEffect(() => {
+    fetchCurrentUser();
+  }, []);
+
+  // The login function now triggers a re-fetch of the user data
+  // The actual login (e.g., via a form) would be handled elsewhere. This simply refreshes the state.
+  const login = async () => {
+    setLoading(true);
+    await fetchCurrentUser();
   };
 
-  const updateUser = (updatedData: Partial<User>) => {
-    setUser(prevUser => {
-      if (!prevUser) return null;
-      return { ...prevUser, ...updatedData };
-    });
+  // The logout function calls the backend API to clear cookies
+  const logout = async () => {
+    try {
+      await axios.post(`${backendUrl}/users/logout`, {}, {
+        withCredentials: true,
+      });
+      setUser(null); // Clear the user from the state
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Even if the API call fails, we should still clear the local state
+      setUser(null);
+    }
   };
 
-  const value = { user, login, logout, updateUser };
+  const value = { user, login, logout, loading };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
+    throw new Error("useAuth must be used within an AuthProvider");
   }
   return context;
-}
+};
