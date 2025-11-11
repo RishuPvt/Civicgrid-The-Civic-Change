@@ -20,7 +20,6 @@ const RewardsPage = lazy(() => import("./pages/Rewards.tsx"));
 const MyContributionsPage = lazy(() => import("./pages/MyContributions.tsx"));
 const MapPage = lazy(() => import("./pages/MapPage.tsx"));
 const TaskListPage = lazy(() => import("./pages/TaskListPage.tsx"));
-const CreateEventPage = lazy(() => import("./pages/CreateEventPage.tsx"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage.tsx"));
 
 function App() {
@@ -50,7 +49,6 @@ function App() {
           <Route path="/tasks" element={<TaskListPage />} />
           <Route path="/task/:taskId" element={<TaskDetailPage />} />{" "}
           {/* Dynamic route */}
-          <Route path="/create-event" element={<CreateEventPage />} />
           <Route path="/profile" element={<ProfilePage />} />
         </Route>
       </Routes>
