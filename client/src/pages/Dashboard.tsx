@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { useNavigate } from 'react-router-dom';
-import { FileText, Trophy, TrendingUp, Info } from 'lucide-react';
-import ScoreWidget from '../components/Dashboard/ScoreWidget';
-import ScoreBreakdown from '../components/Dashboard/ScoreBreakdown';
-import { useAuth } from '../context/AuthContext';
-import WelcomeModal from '../components/Common/WelcomeModal';
+import React, { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import { FileText, Trophy, TrendingUp, Info, RefreshCw } from "lucide-react";
+import ScoreWidget from "../components/Dashboard/ScoreWidget";
+import ScoreBreakdown from "../components/Dashboard/ScoreBreakdown";
+import { useAuth } from "../context/AuthContext";
+import WelcomeModal from "../components/Common/WelcomeModal";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -15,16 +15,16 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     // Check for the new user flag from session storage
-    const newUserFlag = sessionStorage.getItem('isNewUser');
+    const newUserFlag = sessionStorage.getItem("isNewUser");
     if (newUserFlag) {
       setIsNewUser(true);
-      sessionStorage.removeItem('isNewUser');
+      sessionStorage.removeItem("isNewUser");
     }
 
-    const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeModal');
+    const hasSeenWelcome = localStorage.getItem("hasSeenWelcomeModal");
     if (!hasSeenWelcome && user) {
       setShowWelcome(true);
-      localStorage.setItem('hasSeenWelcomeModal', 'true');
+      localStorage.setItem("hasSeenWelcomeModal", "true");
     }
   }, [user]);
 
@@ -32,23 +32,32 @@ const Dashboard: React.FC = () => {
 
   const quickActions = [
     {
-      title: 'Submit Report',
-      description: 'Report civic issues in your area',
+      title: "Submit Report",
+      description: "Report civic issues in your area",
       icon: FileText,
-      color: 'from-green-500 to-green-600',
-      onClick: () => navigate('/submit-report'),
+      color: "from-green-500 to-green-600",
+      onClick: () => navigate("/submit-report"),
     },
     {
-      title: 'View Leaderboard',
-      description: 'See how you rank among peers',
+      title: "View Leaderboard",
+      description: "See how you rank among peers",
       icon: Trophy,
-      color: 'from-blue-500 to-blue-600',
-      onClick: () => navigate('/leaderboard'),
+      color: "from-blue-500 to-blue-600",
+      onClick: () => navigate("/leaderboard"),
     },
   ];
 
   if (!user) {
-    return <div className="p-8 text-center">Loading...</div>;
+    return (
+      <div className="absolute inset-0 z-50 flex items-center justify-center bg-gray-100 bg-opacity-80">
+        <div className="flex flex-col items-center">
+          <RefreshCw className="w-8 h-8 text-green-500 animate-spin" />
+          <p className="mt-2 text-gray-700 font-semibold">
+            Loading your Data...
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -68,9 +77,13 @@ const Dashboard: React.FC = () => {
             className="mb-8"
           >
             <h1 className="font-bold text-3xl text-gray-900 mb-1">
-              {isNewUser ? `Welcome, ${user.name}!` : `Welcome back, ${user.name}! 👋`}
+              {isNewUser
+                ? `Welcome, ${user.name}!`
+                : `Welcome back, ${user.name}! 👋`}
             </h1>
-            <p className="text-gray-600">Here's your civic impact overview for today.</p>
+            <p className="text-gray-600">
+              Here's your civic impact overview for today.
+            </p>
           </motion.div>
 
           {/* Main Grid */}
@@ -87,7 +100,9 @@ const Dashboard: React.FC = () => {
 
             {/* Quick Actions */}
             <div className="lg:col-span-1 space-y-4">
-              <h3 className="font-semibold text-xl text-gray-900 mb-4">Quick Actions</h3>
+              <h3 className="font-semibold text-xl text-gray-900 mb-4">
+                Quick Actions
+              </h3>
               {quickActions.map((action, index) => (
                 <motion.button
                   key={action.title}
@@ -104,8 +119,12 @@ const Dashboard: React.FC = () => {
                       <action.icon className="w-6 h-6 text-white" />
                     </div>
                     <div className="text-left">
-                      <div className="font-semibold text-lg">{action.title}</div>
-                      <div className="text-white/80 text-sm">{action.description}</div>
+                      <div className="font-semibold text-lg">
+                        {action.title}
+                      </div>
+                      <div className="text-white/80 text-sm">
+                        {action.description}
+                      </div>
                     </div>
                   </div>
                 </motion.button>
@@ -117,7 +136,9 @@ const Dashboard: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 lg:items-start gap-8">
             {/* Recent Activity */}
             <div className="lg:col-span-2 bg-white rounded-3xl p-6 shadow-lg">
-              <h3 className="font-semibold text-xl text-gray-900 mb-6">Recent Activity</h3>
+              <h3 className="font-semibold text-xl text-gray-900 mb-6">
+                Recent Activity
+              </h3>
               {recentActivities.length === 0 ? (
                 <div className="text-center py-10 text-gray-500">
                   <Info className="w-12 h-12 mx-auto mb-4 text-gray-300" />
@@ -125,13 +146,17 @@ const Dashboard: React.FC = () => {
                   <p className="text-sm">Submit a report to get started!</p>
                 </div>
               ) : (
-                <div className="space-y-4">{/* Map through activities here */}</div>
+                <div className="space-y-4">
+                  {/* Map through activities here */}
+                </div>
               )}
             </div>
 
             {/* Weekly Stats */}
             <div className="bg-white rounded-3xl p-6 shadow-lg">
-              <h3 className="font-semibold text-xl text-gray-900 mb-6">This Week</h3>
+              <h3 className="font-semibold text-xl text-gray-900 mb-6">
+                This Week
+              </h3>
               <div className="space-y-6">
                 {/* Reports Submitted */}
                 <div>
@@ -140,7 +165,10 @@ const Dashboard: React.FC = () => {
                     <span className="font-bold text-green-600">0</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div className="bg-green-500 h-2 rounded-full" style={{ width: '0%' }} />
+                    <div
+                      className="bg-green-500 h-2 rounded-full"
+                      style={{ width: "0%" }}
+                    />
                   </div>
                 </div>
 
@@ -151,7 +179,10 @@ const Dashboard: React.FC = () => {
                     <span className="font-bold text-blue-600">0</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div className="bg-blue-500 h-2 rounded-full" style={{ width: '0%' }} />
+                    <div
+                      className="bg-blue-500 h-2 rounded-full"
+                      style={{ width: "0%" }}
+                    />
                   </div>
                 </div>
 
@@ -162,14 +193,19 @@ const Dashboard: React.FC = () => {
                     <span className="font-bold text-yellow-600">0</span>
                   </div>
                   <div className="w-full bg-gray-100 rounded-full h-2">
-                    <div className="bg-yellow-500 h-2 rounded-full" style={{ width: '0%' }} />
+                    <div
+                      className="bg-yellow-500 h-2 rounded-full"
+                      style={{ width: "0%" }}
+                    />
                   </div>
                 </div>
 
                 <div className="pt-4 border-t border-gray-100">
                   <div className="flex items-center space-x-2 text-gray-500">
                     <TrendingUp className="w-4 h-4" />
-                    <span className="text-sm font-medium">No change from last week</span>
+                    <span className="text-sm font-medium">
+                      No change from last week
+                    </span>
                   </div>
                 </div>
               </div>
