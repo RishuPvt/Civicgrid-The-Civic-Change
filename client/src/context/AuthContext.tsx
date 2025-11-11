@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // The logout function calls the backend API to clear cookies
   const logout = async () => {
     try {
-      await axios.post(`${backendUrl}/users/logout`, {}, {
+      await axios.post(`${backendUrl}/LogoutUser`, {}, {
         withCredentials: true,
       });
       setUser(null); // Clear the user from the state
