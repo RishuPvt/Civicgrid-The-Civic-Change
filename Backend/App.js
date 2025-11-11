@@ -3,7 +3,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 const corsOptions = {
-  origin: "http://localhost:5173",
+  origin: "https://civicgrid-the-civic-change.vercel.app/",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
   allowedHeaders: ["Origin", "Content-Type", "Accept", "Authorization"],
