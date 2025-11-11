@@ -1,1 +1,1 @@
-export const backendUrl = "https://civicgrid-the-civic-change.onrender.com";
+export const backendUrl = "https://civicgrid-the-civic-change.onrender.com/api/v1";
