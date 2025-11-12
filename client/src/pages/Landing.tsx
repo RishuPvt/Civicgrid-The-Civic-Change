@@ -7,7 +7,6 @@ import HowItWorks from '../components/Landing/HowItWorks';
 import Testimonials from '../components/Landing/Testimonials';
 import ReelsSection from '../components/Landing/ReelsSection'; // New section
 
-// Data for the community feed
 const feedArticles = [
   {
     category: 'Community Event',
@@ -121,56 +120,6 @@ const Landing: React.FC = () => {
       {/* How It Works */}
       <HowItWorks />
 
-      {/* NEW: Reels Section */}
-      <ReelsSection />
-
-      {/* Community Pulse Feed */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="font-bold text-4xl text-gray-900 mb-4">Community Pulse</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              The latest stories, achievements, and updates from the CivicGrid community.
-            </p>
-          </div>
-          <div className="space-y-8 max-w-3xl mx-auto">
-            {feedArticles.map((article, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow"
-              >
-                <div className="p-6">
-                  <p className="text-sm font-semibold text-green-600 mb-2">{article.category}</p>
-                  <h2 className="text-2xl font-bold text-gray-800 mb-3">{article.title}</h2>
-                  <p className="text-gray-600 leading-relaxed mb-4">{article.summary}</p>
-                  <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                    <div className="flex items-center space-x-3">
-                      <img src={article.avatar} alt={article.author} className="w-10 h-10 rounded-full" />
-                      <div>
-                        <p className="font-semibold text-gray-700">{article.author}</p>
-                        <p className="text-xs text-gray-500">{article.timestamp}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => alert('Read more functionality to be added!')}
-                      className="flex items-center space-x-2 text-sm font-medium text-green-600 hover:text-green-700"
-                    >
-                      <span>Read More</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <Testimonials />
     </div>
   );
 };
