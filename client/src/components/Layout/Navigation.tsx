@@ -133,7 +133,7 @@ const Navigation: React.FC = () => {
 
       {/* Mobile Hamburger Button */}
       <button
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-white rounded-full shadow-lg"
+        className="md:hidden fixed top-4 left-4 z-[2000] p-2 bg-white rounded-full shadow-lg"
         onClick={() => setMobileMenuOpen(true)}
       >
         <Menu className="w-6 h-6 text-gray-800" />
@@ -147,7 +147,7 @@ const Navigation: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="md:hidden fixed inset-0 bg-black/50 z-50"
+              className="md:hidden fixed inset-0 bg-black/50 z-[2000]"
               onClick={() => setMobileMenuOpen(false)}
             />
             <motion.div
@@ -155,7 +155,7 @@ const Navigation: React.FC = () => {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="md:hidden fixed top-0 left-0 h-full w-64 bg-white z-50"
+              className="md:hidden fixed top-0 left-0 h-full w-64 bg-white z-[2000]"
             >
               <SidebarContent />
             </motion.div>
