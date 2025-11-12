@@ -77,7 +77,9 @@ const RegisterUser = async (req, res) => {
 
     const cookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: true,
+      sameSite : "None",
+
     };
 
     return res
@@ -160,7 +162,8 @@ const LogoutUser = async (req, res) => {
 
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
+    sameSite : "None",
   };
 
   return res
