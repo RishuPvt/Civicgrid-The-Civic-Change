@@ -98,8 +98,16 @@ const MyContributionsPage: React.FC = () => {
       <h1 className="text-3xl font-bold text-gray-900 mb-2">My Contributions</h1>
       <p className="text-gray-600 mb-6">Track all your civic reports and their impact on the community.</p>
 
+      {/* --- START OF FIX --- */}
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {/*
+        I changed 'grid-cols-2' to 'grid-cols-1' to stack them on mobile by default.
+        I then added 'sm:grid-cols-2' to make it a 2-column grid on small screens (tablets) and up.
+        I kept 'md:grid-cols-4' for medium screens (desktops) and up.
+        This makes your layout fully responsive.
+      */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      {/* --- END OF FIX --- */}
         {statCards.map((stat, index) => (
           <motion.div
             key={index}
